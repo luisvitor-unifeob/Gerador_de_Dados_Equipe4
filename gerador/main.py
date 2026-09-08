@@ -6,8 +6,10 @@ from src.itens import gerar_arquivo_itens
 from src.itens_compra import gerar_arquivo_itens_compra
 
 
-QUANTIDADE = 1_000
+QUANTIDADE = 50_000
 
+# abrir os arquivos várias vezes pode desacelerar demais o código,
+# já que, nas análises finais, vamos gerar algumas centenas de milhares de entradas
 arquivo_jogadores = gerar_arquivo_jogadores(QUANTIDADE)
 arquivo_sessoes = gerar_arquivo_sessoes(arquivo_jogadores)
 arquivo_partidas = gerar_arquivo_partidas(arquivo_sessoes)

@@ -6,4 +6,5 @@ gerador/output/
 
 .vscode/
 
-docs/.obsidian/
+.obsidian/
+**/.obsidian/
