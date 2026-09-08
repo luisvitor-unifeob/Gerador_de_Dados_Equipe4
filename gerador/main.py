@@ -8,23 +8,12 @@ from src.itens_compra import gerar_arquivo_itens_compra
 
 QUANTIDADE = 1_000
 
-
 arquivo_jogadores = gerar_arquivo_jogadores(QUANTIDADE)
-
 arquivo_sessoes = gerar_arquivo_sessoes(arquivo_jogadores)
-
 arquivo_partidas = gerar_arquivo_partidas(arquivo_sessoes)
 
-arquivo_compras = gerar_arquivo_compras(
-    arquivo_sessoes,
-    arquivo_partidas
-)
-
+arquivo_compras = gerar_arquivo_compras(arquivo_sessoes, arquivo_partidas)
 arquivo_itens = gerar_arquivo_itens()
-
-arquivo_itens_compra = (
-    gerar_arquivo_itens_compra(arquivo_compras, arquivo_itens)
-)
-
+arquivo_itens_compra = (gerar_arquivo_itens_compra(arquivo_compras, arquivo_itens))
 
 print("Dados gerados com sucesso!")

@@ -49,16 +49,9 @@ gc = geonamescache.GeonamesCache(
 )
 
 
-GC_PASTA_BASE = (
-    BASE_DIR
-    / "data"
-    / "base_geografica"
-)
+GC_PASTA_BASE = (BASE_DIR / "data" / "base_geografica")
 
-ARQUIVO_ESTADOS = (
-    GC_PASTA_BASE
-    / "codigos_divisoes_administrativas.txt"
-)
+ARQUIVO_ESTADOS = (GC_PASTA_BASE / "codigos_divisoes_administrativas.txt")
 
 URL_ESTADOS = (
     "https://download.geonames.org/export/dump/"
@@ -67,83 +60,51 @@ URL_ESTADOS = (
 
 
 def normalizar(texto):
-    texto = unicodedata.normalize(
-        "NFKD",
-        texto
-    )
+    texto = unicodedata.normalize("NFKD", texto)
 
     return "".join(
-        letra
-        for letra in texto
+        letra for letra in texto
         if not unicodedata.combining(letra)
     ).lower()
 
 
 def carregar_estados():
-    GC_PASTA_BASE.mkdir(
-        parents=True,
-        exist_ok=True
-    )
+    GC_PASTA_BASE.mkdir(parents=True, exist_ok=True)
 
     if not ARQUIVO_ESTADOS.exists():
-        urlretrieve(
-            URL_ESTADOS,
-            ARQUIVO_ESTADOS
-        )
+        urlretrieve(URL_ESTADOS, ARQUIVO_ESTADOS)
 
     estados = {}
-
     with open(
         ARQUIVO_ESTADOS,
         "r",
         encoding="utf-8"
     ) as arquivo:
-
         for linha in arquivo:
             partes = linha.strip().split("\t")
-
             if len(partes) >= 2:
                 estados[partes[0]] = partes[1]
-
     return estados
 
 
 ESTADOS = carregar_estados()
-
-
 SIGLAS_ESTADOS = {}
 
 for estado in pycountry.subdivisions:
     if estado.country_code not in PAISES:
         continue
 
-    nome = normalizar(
-        estado.name
-    )
+    nome = normalizar(estado.name)
+    sigla = estado.code.split("-", 1)[-1]
 
-    sigla = estado.code.split(
-        "-",
-        1
-    )[-1]
-
-    SIGLAS_ESTADOS[
-        (
-            estado.country_code,
-            nome
-        )
-    ] = sigla
-
+    SIGLAS_ESTADOS[(estado.country_code, nome)] = sigla
 
 CIDADES = []
 
 for cidade in gc.get_cities().values():
-    codigo_pais = cidade.get(
-        "countrycode"
-    )
+    codigo_pais = cidade.get("countrycode")
 
-    codigo_estado = cidade.get(
-        "admin1code"
-    )
+    codigo_estado = cidade.get("admin1code")
 
     if codigo_pais not in PAISES:
         continue
@@ -151,49 +112,21 @@ for cidade in gc.get_cities().values():
     if not codigo_estado:
         continue
 
-    chave_estado = (
-        f"{codigo_pais}.{codigo_estado}"
-    )
+    chave_estado = (f"{codigo_pais}.{codigo_estado}")
 
     if chave_estado in ESTADOS:
-        CIDADES.append(
-            cidade
-        )
-
+        CIDADES.append(cidade)
 
 def gerar_localizacao():
-    cidade = random.choice(
-        CIDADES
-    )
+    cidade = random.choice(CIDADES)
+    codigo_pais = cidade["countrycode"]
 
-    codigo_pais = cidade[
-        "countrycode"
-    ]
+    codigo_estado = cidade["admin1code"]
+    chave_estado = (f"{codigo_pais}.{codigo_estado}")
+    nome_estado = ESTADOS[chave_estado]
 
-    codigo_estado = cidade[
-        "admin1code"
-    ]
-
-    chave_estado = (
-        f"{codigo_pais}.{codigo_estado}"
-    )
-
-    nome_estado = ESTADOS[
-        chave_estado
-    ]
-
-    sigla = SIGLAS_ESTADOS.get(
-        (
-            codigo_pais,
-            normalizar(nome_estado)
-        )
-    )
-
-    estado = (
-        sigla
-        if sigla
-        else nome_estado
-    )
+    sigla = SIGLAS_ESTADOS.get((codigo_pais, normalizar(nome_estado)))
+    estado = (sigla if sigla else nome_estado)
 
     return {
         "cidade": cidade["name"],
@@ -205,70 +138,30 @@ def gerar_localizacao():
 
 def gerar_jogador(player_id):
     local = gerar_localizacao()
-
-    fake = FAKERS[
-        local["codigo_pais"]
-    ]
-
-    genero = random.choice(
-        [
-            "Masculino",
-            "Feminino",
-        ]
-    )
+    fake = FAKERS[local["codigo_pais"]]
+    genero = random.choice(["Masculino", "Feminino",])
 
     if genero == "Masculino":
-        nome = (
-            fake.first_name_male()
-            + " "
-            + fake.last_name()
-        )
+        nome = (fake.first_name_male() + " " + fake.last_name())
     else:
-        nome = (
-            fake.first_name_female()
-            + " "
-            + fake.last_name()
-        )
+        nome = (fake.first_name_female() + " " + fake.last_name())
 
-    username = (
-        criar_username(nome)
-        + str(player_id)
-    )
+    username = (criar_username(nome) + str(player_id))
 
-    idade = random.randint(
-        16,
-        55
-    )
-
-    nascimento = gerar_data_nascimento(
-        idade
-    )
-
-    idade_minima = adicionar_anos(
-        nascimento,
-        13
-    )
-
-    inicio_sistema = date(
-        2010,
-        1,
-        1
-    )
-
+    idade = random.randint(16, 55)
+    nascimento = gerar_data_nascimento(idade)
+    idade_minima = adicionar_anos(nascimento, 13)
+    inicio_sistema = date(2010, 1, 1)
     data_minima = max(
         idade_minima,
         inicio_sistema
     )
-
     data_criacao = data_aleatoria(
         data_minima,
         HOJE
     )
 
-    nivel = random.randint(
-        1,
-        100
-    )
+    nivel = random.randint(1, 100)
 
     return {
         "player_id": player_id,
@@ -287,10 +180,7 @@ def gerar_jogador(player_id):
 
 def gerar_arquivo_jogadores(quantidade):
     pasta = BASE_DIR / "output"
-
-    pasta.mkdir(
-        exist_ok=True
-    )
+    pasta.mkdir(exist_ok=True)
 
     momento = datetime.now().strftime(
         "%Y%m%d_%H%M%S_%f"
@@ -321,24 +211,13 @@ def gerar_arquivo_jogadores(quantidade):
         newline="",
         encoding="utf-8-sig"
     ) as arquivo:
-
         escritor = csv.DictWriter(
             arquivo,
             fieldnames=colunas
         )
-
         escritor.writeheader()
 
-        for player_id in range(
-            1,
-            quantidade + 1
-        ):
-            jogador = gerar_jogador(
-                player_id
-            )
-
-            escritor.writerow(
-                jogador
-            )
-
+        for player_id in range(1, quantidade + 1):
+            jogador = gerar_jogador(player_id)
+            escritor.writerow(jogador)
     return caminho
