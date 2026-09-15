@@ -1,4 +1,7 @@
-# Gerador de dados
+# 🎮 Telemetria em Jogos Digitais
+
+**Projeto Integrado de Data Science**
+
 ## Dependencia que tem que instalar para rodar o gerador 
 
 pip install faker geonamescache pycountry Babel
