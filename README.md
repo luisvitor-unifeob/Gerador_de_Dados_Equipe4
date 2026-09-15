@@ -1,6 +1,15 @@
 # 🎮 Telemetria em Jogos Digitais
 
-**Projeto Integrado de Data Science**
+## 👨‍💻 Equipe
+
+Projeto desenvolvido pelo **Grupo 4** como parte do Projeto Integrado de **Data Science da UNIFEOB**.
+
+- Gabriel da Silva Freitas — RA: 24001078
+- José Carlos Pereira Neto — RA: 24000209
+- Lucas Paulino Gomes — RA: 24000580
+- Thierry Antonello Pengo — RA: 24000073
+- Luís Miguel Vitor — RA: 24000174
+- Maria Luiza Tavares Procopio — RA: 24001256
 
 ## Dependencia que tem que instalar para rodar o gerador 
 
