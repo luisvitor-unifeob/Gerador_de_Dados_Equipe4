@@ -6,7 +6,7 @@ from src.itens import gerar_arquivo_itens
 from src.itens_compra import gerar_arquivo_itens_compra
 
 
-QUANTIDADE = 1_000_000
+QUANTIDADE = 100_000
 
 # abrir os arquivos várias vezes pode desacelerar demais o código,
 # já que, nas análises finais, vamos gerar algumas centenas de milhares de entradas
