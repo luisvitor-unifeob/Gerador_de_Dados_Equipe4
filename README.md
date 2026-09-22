@@ -117,18 +117,5 @@ geradgerador/output/
 ```
 
 
-## 📈 Análise Exploratória de Dados
-
-## 🗄️ Big Data
-
-## 📊 Probabilidade e Estatística
-
-## ⚙️ DevOps
-
-## 📝 Exemplo de Uso
-
-## 🧭 Como acessar o repositório
-### Clonar o repositório
-
 ```bash
 git clone https://github.com/luisvitor-unifeob/Gerador-de-dados-PI.git
