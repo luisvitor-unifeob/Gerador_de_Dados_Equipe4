@@ -35,7 +35,15 @@ Gerador-de-dados-PI/
 ├── gerador/
 │   ├── data/
 │   │   └── base_geografica/
-│   │
+│   ├── sujeira/
+|   |   ├── compras_sujeira.py
+│   │   ├── itens_compra_sujeira.py
+│   │   ├── itens_sujeira.py
+│   │   ├── jogadores_sujeira.py
+|   |   ├── nucleo.py
+│   │   ├── partidas_sujeira.py
+│   │   └── sessoes_sujeira.py
+|   |
 │   ├── output/
 │   │
 │   ├── src/
