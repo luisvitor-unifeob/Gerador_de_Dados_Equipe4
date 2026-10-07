@@ -1,0 +1,5 @@
+babel==2.18.0
+Faker==40.38.0
+geonamescache==3.0.2
+pycountry==26.2.16
+typing_extensions==4.16.0
