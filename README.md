@@ -26,6 +26,17 @@ Atualmente, o gerador cria arquivos CSV relacionados a:
 
 Os dados possuem identificadores que permitem relacionar os diferentes arquivos gerados.
 
+## 🧹 Gestão de Ficheiros e Relatório de Falhas
+
+Para otimizar o espaço em disco e manter a rastreabilidade das inconformidades injetadas nos dados, o fluxo do gerador executa os seguintes passos:
+
+1. **Geração e Degradação de Dados**:
+   - Os dados originais com falhas injetadas são salvos na pasta `gerador/output/sujos/`.
+2. **Relatório de Falhas (`relatorio_falhas.json`)**:
+   - É gerado um relatório detalhado em `gerador/output/sujos/relatorio_falhas.json` contabilizando todas as inconsistências aplicadas (linhas duplicadas, campos ausentes e despadronizações) para cada arquivo.
+3. **Otimização de Armazenamento**:
+   - Após a criação dos arquivos sujos e a consolidação do relatório, os arquivos limpos intermediários presentes em `gerador/output/` são eliminados automaticamente para economizar armazenamento em disco.
+   
 ## 🗂 Estrutura das Pastas
 ```text
 Gerador-de-dados-PI/
@@ -100,3 +111,4 @@ gerador/output/
 ```bash
 git clone https://github.com/luisvitor-unifeob/Gerador-de-dados-PI.git
 ```
+
