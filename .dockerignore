@@ -1,0 +1,13 @@
+# git
+.git
+.gitignore
+
+# segredos
+.env
+
+# pastas do python
+.venv/
+__pycache__/
+
+# outputs do gerador
+output/
