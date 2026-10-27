@@ -2,10 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /gerador
 
-COPY /opt/projeto/gerador/requirements.txt .
+COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY /opt/projeto/gerador/ .
+COPY ./ .
 EXPOSE 4040
 
 CMD ["python", "gerador/main.py"]
