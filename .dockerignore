@@ -1,0 +1,11 @@
+# git
+.git/
+.gitignore
+
+# pastas do python
+.venv/
+venv/
+__pycache__/
+
+# outputs do gerador
+output/
