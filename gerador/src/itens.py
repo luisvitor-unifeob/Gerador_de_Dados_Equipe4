@@ -79,11 +79,11 @@ def gerar_itens():
             item_id += 1
     return itens
 
-def gerar_arquivo_itens():
+def gerar_arquivo_itens(id_lote):
     pasta = BASE_DIR / "output"
     pasta.mkdir(exist_ok=True)
     momento = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    caminho = pasta / f"itens_{momento}.csv"
+    caminho = pasta / f"{id_lote}-itens_{momento}.csv"
     colunas = [
         "item_id",
         "nome_item",

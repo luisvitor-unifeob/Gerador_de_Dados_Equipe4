@@ -148,13 +148,13 @@ def gerar_jogador(player_id):
     }
 
 #Salva os jogadores em um CSV
-def gerar_arquivo_jogadores(quantidade):
+def gerar_arquivo_jogadores(id_lote, quantidade):
     pasta = BASE_DIR / "output"
     pasta.mkdir(exist_ok=True)
 
     #Inclui microssegundos para evitar nomes de arquivos repetidos
     momento = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    caminho = pasta / f"jogadores_{quantidade}_{momento}.csv"
+    caminho = pasta / f"{id_lote}-jogadores_{quantidade}_{momento}.csv"
     colunas = [
         "player_id",
         "nome",

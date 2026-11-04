@@ -193,11 +193,11 @@ def gerar_sessoes_jogador(jogador, proximo_sessao_id):
         sessao["nivel_fim"] = nivel_fim
     return sessoes, proximo_sessao_id
 
-def gerar_arquivo_sessoes(caminho_jogadores):
+def gerar_arquivo_sessoes(id_lote, caminho_jogadores):
     pasta = BASE_DIR / "output"
     pasta.mkdir(exist_ok=True)
     momento = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    caminho = pasta / f"sessoes_{momento}.csv"
+    caminho = pasta / f"{id_lote}-sessoes_{momento}.csv"
     colunas = [
         "sessao_id",
         "player_id",

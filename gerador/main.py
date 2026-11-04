@@ -19,24 +19,24 @@ id_lote = 1
 
 while True:
     # Geração dos arquivos originais em output/
-    arquivo_jogadores = gerar_arquivo_jogadores(QUANTIDADE)
-    arquivo_sessoes = gerar_arquivo_sessoes(arquivo_jogadores)
-    arquivo_partidas = gerar_arquivo_partidas(arquivo_sessoes)
+    arquivo_jogadores    =     gerar_arquivo_jogadores( id_lote, QUANTIDADE                        )
+    arquivo_sessoes      =       gerar_arquivo_sessoes( id_lote, arquivo_jogadores                 )
+    arquivo_partidas     =      gerar_arquivo_partidas( id_lote, arquivo_sessoes                   )
 
-    arquivo_compras = gerar_arquivo_compras(arquivo_sessoes, arquivo_partidas)
-    arquivo_itens = gerar_arquivo_itens()
-    arquivo_itens_compra = gerar_arquivo_itens_compra(arquivo_compras, arquivo_itens)
+    arquivo_compras      =       gerar_arquivo_compras( id_lote, arquivo_sessoes, arquivo_partidas )
+    arquivo_itens        =         gerar_arquivo_itens( id_lote                                    )
+    arquivo_itens_compra =  gerar_arquivo_itens_compra( id_lote, arquivo_compras, arquivo_itens    )
 
     # Etapa de sujeira:
     # - Gera cópias em output/sujos/
     # - Documenta as falhas em output/sujos/relatorio_falhas.json
     # - Exclui os arquivos sem falhas de output/ para economizar disco
-    sujar_jogadores     ( arquivo_jogadores   , id_lote )
-    sujar_sessoes       ( arquivo_sessoes     , id_lote )
-    sujar_partidas      ( arquivo_partidas    , id_lote )
-    sujar_compras       ( arquivo_compras     , id_lote )
-    sujar_itens         ( arquivo_itens       , id_lote )
-    sujar_itens_compra  ( arquivo_itens_compra, id_lote )
+    sujar_jogadores     ( arquivo_jogadores    )
+    sujar_sessoes       ( arquivo_sessoes      )
+    sujar_partidas      ( arquivo_partidas     )
+    sujar_compras       ( arquivo_compras      )
+    sujar_itens         ( arquivo_itens        )
+    sujar_itens_compra  ( arquivo_itens_compra )
 
     print("Dados gerados, arquivos limpos removidos e falhas documentadas com sucesso!")
     id_lote += 1

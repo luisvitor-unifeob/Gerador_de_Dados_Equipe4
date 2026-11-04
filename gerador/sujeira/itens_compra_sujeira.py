@@ -4,6 +4,5 @@ from sujeira.nucleo import aplicar_sujeira
 def sujar_itens_compra(caminho_csv, id_lote):
     return aplicar_sujeira(
         caminho_csv,
-        id_lote,
         colunas_numericas=["valor_unitario", "desconto", "valor_total_item"]
     )

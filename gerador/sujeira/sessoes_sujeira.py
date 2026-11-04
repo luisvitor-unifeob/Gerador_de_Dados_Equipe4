@@ -4,7 +4,6 @@ from sujeira.nucleo import aplicar_sujeira
 def sujar_sessoes(caminho_csv, id_lote):
     return aplicar_sujeira(
         caminho_csv,
-        id_lote,
         colunas_ausentes=["plataforma"],
         colunas_texto=["plataforma", "genero_jogo"],
         colunas_data=["data_inicio_sessao", "data_fim_sessao"]

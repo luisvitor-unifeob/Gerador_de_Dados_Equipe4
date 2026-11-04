@@ -98,11 +98,11 @@ def calcular_quantidade_compras(perfil):
         k=1
     )[0]
 
-def gerar_arquivo_compras(caminho_sessoes, caminho_partidas):
+def gerar_arquivo_compras(id_lote, caminho_sessoes, caminho_partidas):
     pasta = BASE_DIR / "output"
     pasta.mkdir(exist_ok=True)
     momento = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    caminho = pasta / f"compras_{momento}.csv"
+    caminho = pasta / f"{id_lote}-compras_{momento}.csv"
     colunas = [
         "compra_id",
         "sessao_id",

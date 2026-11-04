@@ -46,11 +46,11 @@ def calcular_desconto(subtotal):
     )[0]
     return round(subtotal * percentual, 2)
 
-def gerar_arquivo_itens_compra(caminho_compras, caminho_itens):
+def gerar_arquivo_itens_compra(id_lote, caminho_compras, caminho_itens):
     pasta = BASE_DIR / "output"
     pasta.mkdir(exist_ok=True)
     momento = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    caminho = pasta / f"itens_compra_{momento}.csv"
+    caminho = pasta / f"{id_lote}-itens_compra_{momento}.csv"
     colunas = [
         "item_compra_id",
         "compra_id",

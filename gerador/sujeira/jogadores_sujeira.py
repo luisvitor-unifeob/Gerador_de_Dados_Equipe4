@@ -4,7 +4,6 @@ from sujeira.nucleo import aplicar_sujeira
 def sujar_jogadores(caminho_csv, id_lote):
     return aplicar_sujeira(
         caminho_csv,
-        id_lote,
         colunas_ausentes=["cidade", "estado", "genero"],
         colunas_texto=["cidade", "estado", "pais", "genero"],
         colunas_data=["data_nascimento", "data_criacao_conta"]
