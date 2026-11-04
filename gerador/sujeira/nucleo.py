@@ -144,13 +144,10 @@ def aplicar_sujeira(
     colunas_numericas=None,
     percentual_duplicados=PERCENTUAL_DUPLICADOS,
     percentual_ausentes=PERCENTUAL_AUSENTES,
-    percentual_despadronizados=PERCENTUAL_DESPADRONIZADOS,
-    manter_original=False
+    percentual_despadronizados=PERCENTUAL_DESPADRONIZADOS
 ):
     caminho_original = Path(caminho_csv)
-    pasta = BASE_DIR / "output" / "sujos"
-    pasta.mkdir(parents=True, exist_ok=True)
-    caminho_saida = pasta / caminho_original.name
+    pasta = caminho_original.parent
 
     colunas, linhas = ler_csv(caminho_original)
 
@@ -166,7 +163,7 @@ def aplicar_sujeira(
     )
     linhas, total_duplicados = inserir_duplicados(linhas, percentual_duplicados)
 
-    escrever_csv(caminho_saida, colunas, linhas)
+    escrever_csv(caminho_original, colunas, linhas)
 
     # Documenta as falhas no relatorio_falhas.json
     registrar_relatorio_falhas(
@@ -178,8 +175,4 @@ def aplicar_sujeira(
         despadronizados=total_despadronizados
     )
 
-    # Exclui o arquivo original/limpo para economizar disco
-    if not manter_original and caminho_original.exists():
-        caminho_original.unlink()
-
-    return caminho_saida
+    return caminho_original

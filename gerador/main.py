@@ -27,9 +27,7 @@ while True:
     arquivo_itens_compra = gerar_arquivo_itens_compra(arquivo_compras, arquivo_itens)
 
     # Etapa de sujeira:
-    # - Gera cópias em output/sujos/
-    # - Documenta as falhas em output/sujos/relatorio_falhas.json
-    # - Exclui os arquivos sem falhas de output/ para economizar disco
+    # - Suja os próprios arquivos gerados em output/
     sujar_jogadores(arquivo_jogadores)
     sujar_sessoes(arquivo_sessoes)
     sujar_partidas(arquivo_partidas)
@@ -37,6 +35,6 @@ while True:
     sujar_itens(arquivo_itens)
     sujar_itens_compra(arquivo_itens_compra)
 
-    print("Dados gerados, arquivos limpos removidos e falhas documentadas com sucesso!")
+    print("Dados gerados, sujos e falhas documentadas com sucesso!")
 
     sleep(10)
