@@ -1,9 +1,10 @@
 from sujeira.nucleo import aplicar_sujeira
 
 #Configura quais colunas do arquivo de compras recebem cada tipo de problema
-def sujar_compras(caminho_csv):
+def sujar_compras(caminho_csv, id_lote):
     return aplicar_sujeira(
         caminho_csv,
+        id_lote,
         colunas_ausentes=["data_compra"],
         colunas_data=["data_compra"]
     )

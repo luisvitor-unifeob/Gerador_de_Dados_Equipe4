@@ -138,6 +138,7 @@ def registrar_relatorio_falhas(pasta_saida, nome_arquivo, total_linhas, duplicad
 
 def aplicar_sujeira(
     caminho_csv,
+    id_lote,
     colunas_ausentes=None,
     colunas_texto=None,
     colunas_data=None,
@@ -145,12 +146,12 @@ def aplicar_sujeira(
     percentual_duplicados=PERCENTUAL_DUPLICADOS,
     percentual_ausentes=PERCENTUAL_AUSENTES,
     percentual_despadronizados=PERCENTUAL_DESPADRONIZADOS,
-    manter_original=False
+    manter_original=False,
 ):
     caminho_original = Path(caminho_csv)
     pasta = BASE_DIR / "output" / "sujos"
     pasta.mkdir(parents=True, exist_ok=True)
-    caminho_saida = pasta / caminho_original.name
+    caminho_saida = pasta / f"{id_lote}-{caminho_original.name}"
 
     colunas, linhas = ler_csv(caminho_original)
 

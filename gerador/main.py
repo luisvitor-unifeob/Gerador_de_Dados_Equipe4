@@ -14,7 +14,8 @@ from sujeira.itens_compra_sujeira import sujar_itens_compra
 
 from time import sleep
 
-QUANTIDADE = 10_000
+QUANTIDADE = 5_000
+id_lote = 1
 
 while True:
     # Geração dos arquivos originais em output/
@@ -30,13 +31,14 @@ while True:
     # - Gera cópias em output/sujos/
     # - Documenta as falhas em output/sujos/relatorio_falhas.json
     # - Exclui os arquivos sem falhas de output/ para economizar disco
-    sujar_jogadores(arquivo_jogadores)
-    sujar_sessoes(arquivo_sessoes)
-    sujar_partidas(arquivo_partidas)
-    sujar_compras(arquivo_compras)
-    sujar_itens(arquivo_itens)
-    sujar_itens_compra(arquivo_itens_compra)
+    sujar_jogadores     ( arquivo_jogadores   , id_lote )
+    sujar_sessoes       ( arquivo_sessoes     , id_lote )
+    sujar_partidas      ( arquivo_partidas    , id_lote )
+    sujar_compras       ( arquivo_compras     , id_lote )
+    sujar_itens         ( arquivo_itens       , id_lote )
+    sujar_itens_compra  ( arquivo_itens_compra, id_lote )
 
     print("Dados gerados, arquivos limpos removidos e falhas documentadas com sucesso!")
+    id_lote += 1
 
     sleep(10)
