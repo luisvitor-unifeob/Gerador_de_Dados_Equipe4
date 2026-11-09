@@ -18,7 +18,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-DIR_OUT_GERADOR = Path("/opt/projeto/gerador/out")
+DIR_OUT_GERADOR = Path("/opt/projeto/csvs")
 IP_VM2 = "192.168.122.11"
 MODULO_RSYNC_VM2 = "recebe_csv"
 RSYNC_DESTINO = f"rsync://{IP_VM2}/{MODULO_RSYNC_VM2}/"
