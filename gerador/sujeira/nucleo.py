@@ -138,7 +138,6 @@ def registrar_relatorio_falhas(pasta_saida, nome_arquivo, total_linhas, duplicad
 
 def aplicar_sujeira(
     caminho_csv,
-    id_lote,
     colunas_ausentes=None,
     colunas_texto=None,
     colunas_data=None,
