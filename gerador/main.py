@@ -23,7 +23,7 @@ def gerar_lote_id_unico() -> str:
     return f"{timestamp_ms}{uuid_sufixo:04d}"
 
 QUANTIDADE = 5_000
-PASTA_CSVS = Path("/opt/projeto/csvs/")
+PASTA_CSVS = Path("/gerador/gerador/output/")
 
 while True:
     id_lote = gerar_lote_id_unico()
@@ -53,10 +53,7 @@ while True:
         arquivo_partidas, arquivo_sessoes,
         arquivo_compras, arquivo_itens_compra
     ]:
-        caminho_original = Path(arquivo)
-        nome_arquivo = caminho_original.name
-        novo_caminho = PASTA_CSVS / Path(".tmp") / nome_arquivo
-        move(novo_caminho, PASTA_CSVS)
+        move(arquivo, PASTA_CSVS)
 
 
     print("Dados gerados, arquivos limpos removidos e falhas documentadas com sucesso!")
