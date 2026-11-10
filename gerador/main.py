@@ -15,6 +15,7 @@ from sujeira.itens_compra_sujeira import sujar_itens_compra
 from time import sleep, time
 from uuid import uuid4
 from shutil import move
+from pathlib import Path
 
 def gerar_lote_id_unico() -> str:
     timestamp_ms = int(time() * 1000)
@@ -22,7 +23,7 @@ def gerar_lote_id_unico() -> str:
     return f"{timestamp_ms}{uuid_sufixo:04d}"
 
 QUANTIDADE = 5_000
-PASTA_CSVS = "/opt/projeto/csvs/"
+PASTA_CSVS = Path("/opt/projeto/csvs/")
 
 while True:
     id_lote = gerar_lote_id_unico()
@@ -47,11 +48,16 @@ while True:
     sujar_itens         ( arquivo_itens        )
     sujar_itens_compra  ( arquivo_itens_compra )
 
-    for i in [
+    for arquivo in [
         arquivo_jogadores, arquivo_itens,
         arquivo_partidas, arquivo_sessoes,
         arquivo_compras, arquivo_itens_compra
-    ]: move(i, PASTA_CSVS)
+    ]:
+        caminho_original = Path(arquivo)
+        nome_arquivo = caminho_original.name
+        novo_caminho = PASTA_CSVS / Path(".tmp") / nome_arquivo
+        move(novo_caminho, PASTA_CSVS)
+
 
     print("Dados gerados, arquivos limpos removidos e falhas documentadas com sucesso!")
     sleep(5)
