@@ -149,7 +149,7 @@ def gerar_jogador(player_id):
 
 #Salva os jogadores em um CSV
 def gerar_arquivo_jogadores(id_lote, quantidade):
-    pasta = BASE_DIR / "output"
+    pasta = BASE_DIR / "output/.tmp"
     pasta.mkdir(exist_ok=True)
 
     #Inclui microssegundos para evitar nomes de arquivos repetidos

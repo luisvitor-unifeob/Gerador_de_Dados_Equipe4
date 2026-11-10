@@ -104,7 +104,7 @@ def gerar_partidas_sessao(sessao, proximo_partida_id):
     return partidas, proximo_partida_id
 
 def gerar_arquivo_partidas(id_lote, caminho_sessoes):
-    pasta = BASE_DIR / "output"
+    pasta = BASE_DIR / "output/.tmp"
     pasta.mkdir(exist_ok=True)
     momento = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     caminho = pasta / f"{id_lote}-partidas_{momento}.csv"

@@ -12,12 +12,21 @@ from sujeira.compras_sujeira import sujar_compras
 from sujeira.itens_sujeira import sujar_itens
 from sujeira.itens_compra_sujeira import sujar_itens_compra
 
-from time import sleep
+from time import sleep, time
+from uuid import uuid4
+from shutil import move
+
+def gerar_lote_id_unico() -> str:
+    timestamp_ms = int(time.time() * 1000)
+    uuid_sufixo = uuid4().int % 10000
+    return f"{timestamp_ms}{uuid_sufixo:04d}"
 
 QUANTIDADE = 5_000
-id_lote = 1
+PASTA_CSVS = "/opt/projeto/csvs/"
 
 while True:
+    id_lote = gerar_lote_id_unico()
+
     # Geração dos arquivos originais em output/
     arquivo_jogadores    =     gerar_arquivo_jogadores( id_lote, QUANTIDADE                        )
     arquivo_sessoes      =       gerar_arquivo_sessoes( id_lote, arquivo_jogadores                 )
@@ -38,7 +47,11 @@ while True:
     sujar_itens         ( arquivo_itens        )
     sujar_itens_compra  ( arquivo_itens_compra )
 
-    print("Dados gerados, arquivos limpos removidos e falhas documentadas com sucesso!")
-    id_lote += 1
+    for i in [
+        arquivo_jogadores, arquivo_itens,
+        arquivo_partidas, arquivo_sessoes,
+        arquivo_compras, arquivo_itens_compra
+    ]: move(i, PASTA_CSVS)
 
+    print("Dados gerados, arquivos limpos removidos e falhas documentadas com sucesso!")
     sleep(5)

@@ -194,7 +194,7 @@ def gerar_sessoes_jogador(jogador, proximo_sessao_id):
     return sessoes, proximo_sessao_id
 
 def gerar_arquivo_sessoes(id_lote, caminho_jogadores):
-    pasta = BASE_DIR / "output"
+    pasta = BASE_DIR / "output/.tmp"
     pasta.mkdir(exist_ok=True)
     momento = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     caminho = pasta / f"{id_lote}-sessoes_{momento}.csv"
