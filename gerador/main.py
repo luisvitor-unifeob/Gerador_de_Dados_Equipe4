@@ -17,7 +17,7 @@ from uuid import uuid4
 from shutil import move
 
 def gerar_lote_id_unico() -> str:
-    timestamp_ms = int(time.time() * 1000)
+    timestamp_ms = int(time() * 1000)
     uuid_sufixo = uuid4().int % 10000
     return f"{timestamp_ms}{uuid_sufixo:04d}"
 
