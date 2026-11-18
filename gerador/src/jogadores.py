@@ -2,6 +2,7 @@ from faker import Faker
 from datetime import date, datetime
 from pathlib import Path
 from urllib.request import urlretrieve
+import math
 import random
 import csv
 import unicodedata
@@ -12,7 +13,10 @@ from src.regras import (
     gerar_data_nascimento,
     adicionar_anos,
     data_aleatoria,
-    criar_username
+    criar_username,
+    gerar_idade_realista,
+    gerar_nivel_realista,
+    data_criacao_com_crescimento
 )
 
 #Pasta principal do gerador
@@ -32,6 +36,11 @@ PAISES = {
     "AU": {"nome": "Austrália", "locale": "en_AU"},
     "MX": {"nome": "México", "locale": "es_MX"},
     "AR": {"nome": "Argentina", "locale": "es_AR"}
+}
+
+PESOS_PAISES = {
+    "BR": 35, "US": 20, "MX": 8, "AR": 7, "GB": 5, "DE": 5,
+    "FR": 4, "ES": 4, "CA": 4, "PT": 3, "IT": 3, "AU": 2
 }
 
 #Faker específico para cada país
@@ -75,39 +84,48 @@ for estado in pycountry.subdivisions:
         sigla = estado.code.split("-", 1)[-1]
         SIGLAS_ESTADOS[(estado.country_code, nome)] = sigla
 
-#Guarda somente cidades válidas
-CIDADES = []
+#Guarda somente cidades válidas agrupadas por país
+CIDADES_POR_PAIS = {codigo: [] for codigo in PAISES}
+PESOS_CIDADES_POR_PAIS = {codigo: [] for codigo in PAISES}
+
 for cidade in gc.get_cities().values():
     codigo_pais = cidade.get("countrycode")
     codigo_estado = cidade.get("admin1code")
 
-    if codigo_pais not in PAISES:
-        continue
-    if not codigo_estado:
+    if codigo_pais not in PAISES or not codigo_estado:
         continue
 
     chave_estado = f"{codigo_pais}.{codigo_estado}"
     if chave_estado in ESTADOS:
-        CIDADES.append(cidade)
+        populacao = max(1000, cidade.get("population", 1000))
+        CIDADES_POR_PAIS[codigo_pais].append(cidade)
+        # Raiz quadrada suaviza a disparidade entre capitais e cidades médias
+        PESOS_CIDADES_POR_PAIS[codigo_pais].append(math.isqrt(populacao))
 
 def gerar_localizacao():
-    cidade = random.choice(CIDADES)
-    codigo_pais = cidade["countrycode"]
-    codigo_estado = cidade["admin1code"]
-    chave_estado = f"{codigo_pais}.{codigo_estado}"
-    nome_estado = ESTADOS[chave_estado]
-    sigla = SIGLAS_ESTADOS.get((codigo_pais, normalizar(nome_estado)))
+    cod_pais = random.choices(
+        list(PESOS_PAISES.keys()),
+        weights=list(PESOS_PAISES.values()),
+        k=1
+    )[0]
 
-    if sigla:
-        estado = sigla
-    else:
-        estado = nome_estado
+    cidade = random.choices(
+        CIDADES_POR_PAIS[cod_pais],
+        weights=PESOS_CIDADES_POR_PAIS[cod_pais],
+        k=1
+    )[0]
+
+    codigo_estado = cidade["admin1code"]
+    chave_estado = f"{cod_pais}.{codigo_estado}"
+    nome_estado = ESTADOS[chave_estado]
+    sigla = SIGLAS_ESTADOS.get((cod_pais, normalizar(nome_estado)))
+    estado = sigla if sigla else nome_estado
 
     return {
         "cidade": cidade["name"],
         "estado": estado,
-        "pais": PAISES[codigo_pais]["nome"],
-        "codigo_pais": codigo_pais
+        "pais": PAISES[cod_pais]["nome"],
+        "codigo_pais": cod_pais
     }
 
 def gerar_jogador(player_id):
@@ -121,17 +139,18 @@ def gerar_jogador(player_id):
         nome = fake.first_name_female() + " " + fake.last_name()
 
     username = criar_username(nome) + str(player_id)
-    idade = random.randint(16, 55)
+    idade = gerar_idade_realista()
     nascimento = gerar_data_nascimento(idade)
 
     #A conta só pode ser criada depois que o jogador atingir a idade mínima
     idade_minima = adicionar_anos(nascimento, 13)
     inicio_sistema = date(2010, 1, 1)
     data_minima = max(idade_minima, inicio_sistema)
-    data_criacao = data_aleatoria(data_minima, HOJE)
+    data_criacao = data_criacao_com_crescimento(data_minima, HOJE)
 
-    #O nível representa o estado atual do jogador, e a progressão é detalhada nas sessões
-    nivel = random.randint(1, 100)
+    #Nível condizente com a curva de progressão e tempo de existência da conta
+    dias_conta = max(1, (HOJE - data_criacao).days)
+    nivel = gerar_nivel_realista(dias_conta)
 
     return {
         "player_id": player_id,
