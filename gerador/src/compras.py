@@ -8,15 +8,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 #Probabilidade de compra em uma sessão para cada perfil de jogador
 PERFIS_COMPRA = {
     "nao_pagante": 0.00,
-    "raro": 0.03,
-    "ocasional": 0.10,
-    "frequente": 0.25
+    "minnow": 0.04,
+    "dolphin": 0.12,
+    "whale": 0.38
 }
 
-def escolher_perfil_compra():
+def escolher_perfil_compra(nivel=1):
+    # Jogadores de nível mais alto têm maior taxa de conversão
+    fator_nivel = min(3.0, 1.0 + (nivel / 40.0))
+    peso_pagante = 6.0 * fator_nivel
+    peso_nao_pagante = max(70.0, 100.0 - peso_pagante)
+
     return random.choices(
-        ["nao_pagante", "raro", "ocasional", "frequente"],
-        weights=[50, 30, 15, 5],
+        ["nao_pagante", "minnow", "dolphin", "whale"],
+        weights=[peso_nao_pagante, peso_pagante * 0.70, peso_pagante * 0.23, peso_pagante * 0.07],
         k=1
     )[0]
 
@@ -91,12 +96,9 @@ def calcular_quantidade_compras(perfil):
     if random.random() >= probabilidade:
         return 0
 
-    #Quando ocorre compra, normalmente é apenas uma
-    return random.choices(
-        [1, 2],
-        weights=[90, 10],
-        k=1
-    )[0]
+    if perfil == "whale":
+        return random.choices([1, 2, 3], weights=[55, 35, 10], k=1)[0]
+    return random.choices([1, 2], weights=[90, 10], k=1)[0]
 
 def gerar_arquivo_compras(id_lote, caminho_sessoes, caminho_partidas):
     pasta = BASE_DIR / "output/.tmp"
@@ -124,9 +126,10 @@ def gerar_arquivo_compras(id_lote, caminho_sessoes, caminho_partidas):
             for sessao in leitor:
                 sessao_id = int(sessao["sessao_id"])
                 player_id = int(sessao["player_id"])
+                nivel = int(sessao.get("nivel_fim", 1))
 
                 if player_id not in perfis_jogadores:
-                    perfis_jogadores[player_id] = escolher_perfil_compra()
+                    perfis_jogadores[player_id] = escolher_perfil_compra(nivel)
 
                 perfil = perfis_jogadores[player_id]
                 quantidade = calcular_quantidade_compras(perfil)

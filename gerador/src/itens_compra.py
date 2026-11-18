@@ -5,18 +5,61 @@ import random
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+PESOS_RARIDADE = {
+    "Comum": 45,
+    "Incomum": 28,
+    "Rara": 16,
+    "Épica": 8,
+    "Lendária": 3
+}
+
+PESOS_CATEGORIA = {
+    "Passe de batalha": 2.5,
+    "Moeda virtual": 2.0,
+    "Skin": 1.2,
+    "Cosmético": 1.0,
+    "Pacote": 0.8,
+    "DLC": 0.6,
+    "Boost": 0.7,
+    "Personagem": 0.9,
+    "Emote": 0.8,
+    "Acessório": 0.7
+}
+
 def carregar_itens(caminho_itens):
     itens = []
-
     with open(caminho_itens, "r", newline="", encoding="utf-8-sig") as arquivo:
         leitor = csv.DictReader(arquivo)
         for item in leitor:
             itens.append({
                 "item_id": int(item["item_id"]),
                 "categoria_item": item["categoria_item"],
+                "raridade": item.get("raridade", "Comum"),
                 "preco_base": float(item["preco_base"])
             })
     return itens
+
+def calcular_pesos_catalogo(itens):
+    pesos = []
+    for item in itens:
+        peso_raridade = PESOS_RARIDADE.get(item["raridade"], 10)
+        peso_categoria = PESOS_CATEGORIA.get(item["categoria_item"], 1.0)
+        pesos.append(max(1, int(peso_raridade * peso_categoria)))
+    return pesos
+
+def sortear_itens_compra(itens, pesos, quantidade):
+    quantidade = min(quantidade, len(itens))
+    escolhidos = []
+    indices_disponiveis = list(range(len(itens)))
+    pesos_disponiveis = list(pesos)
+
+    for _ in range(quantidade):
+        idx_sorteado = random.choices(range(len(indices_disponiveis)), weights=pesos_disponiveis, k=1)[0]
+        escolhidos.append(itens[indices_disponiveis[idx_sorteado]])
+        indices_disponiveis.pop(idx_sorteado)
+        pesos_disponiveis.pop(idx_sorteado)
+
+    return escolhidos
 
 def calcular_quantidade_itens():
     #A maioria das compras possui apenas um item
@@ -37,11 +80,15 @@ def calcular_quantidade_unidades(categoria):
         k=1
     )[0]
 
-def calcular_desconto(subtotal):
-    #A maior parte dos itens não recebe desconto
+def calcular_desconto(subtotal, categoria):
+    if categoria in ["Moeda virtual", "Passe de batalha"]:
+        if random.random() < 0.95:
+            return 0.0
+        return round(subtotal * 0.05, 2)
+
     percentual = random.choices(
         [0, 0.05, 0.10, 0.15, 0.20],
-        weights=[70, 12, 9, 6, 3],
+        weights=[65, 15, 10, 7, 3],
         k=1
     )[0]
     return round(subtotal * percentual, 2)
@@ -62,6 +109,7 @@ def gerar_arquivo_itens_compra(id_lote, caminho_compras, caminho_itens):
     ]
 
     itens = carregar_itens(caminho_itens)
+    pesos_itens = calcular_pesos_catalogo(itens)
     proximo_item_compra_id = 1
 
     with open(caminho_compras, "r", newline="", encoding="utf-8-sig") as arquivo_compras:
@@ -73,16 +121,13 @@ def gerar_arquivo_itens_compra(id_lote, caminho_compras, caminho_itens):
             for compra in leitor:
                 compra_id = int(compra["compra_id"])
                 quantidade_itens = calcular_quantidade_itens()
-                quantidade_itens = min(quantidade_itens, len(itens))
-
-                #Evita repetir o mesmo item dentro da mesma compra
-                itens_escolhidos = random.sample(itens, quantidade_itens)
+                itens_escolhidos = sortear_itens_compra(itens, pesos_itens, quantidade_itens)
 
                 for item in itens_escolhidos:
                     quantidade = calcular_quantidade_unidades(item["categoria_item"])
                     valor_unitario = round(item["preco_base"], 2)
                     subtotal = round(valor_unitario * quantidade, 2)
-                    desconto = calcular_desconto(subtotal)
+                    desconto = calcular_desconto(subtotal, item["categoria_item"])
                     valor_total_item = round(subtotal - desconto, 2)
 
                     escritor.writerow({
