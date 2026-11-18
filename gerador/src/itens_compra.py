@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import datetime
 import csv
 import random
+from src.estado import obter_proximo_id, atualizar_ultimo_id
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -110,7 +111,7 @@ def gerar_arquivo_itens_compra(id_lote, caminho_compras, caminho_itens):
 
     itens = carregar_itens(caminho_itens)
     pesos_itens = calcular_pesos_catalogo(itens)
-    proximo_item_compra_id = 1
+    proximo_item_compra_id = obter_proximo_id("ultimo_item_compra_id")
 
     with open(caminho_compras, "r", newline="", encoding="utf-8-sig") as arquivo_compras:
         leitor = csv.DictReader(arquivo_compras)
@@ -140,4 +141,6 @@ def gerar_arquivo_itens_compra(id_lote, caminho_compras, caminho_itens):
                         "valor_total_item": valor_total_item
                     })
                     proximo_item_compra_id += 1
+
+    atualizar_ultimo_id("ultimo_item_compra_id", proximo_item_compra_id - 1)
     return caminho

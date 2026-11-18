@@ -16,6 +16,7 @@ from time import sleep, time
 from uuid import uuid4
 from shutil import move
 from pathlib import Path
+import os
 
 def gerar_lote_id_unico() -> str:
     timestamp_ms = int(time() * 1000)
@@ -23,9 +24,10 @@ def gerar_lote_id_unico() -> str:
     return f"{timestamp_ms}{uuid_sufixo:04d}"
 
 QUANTIDADE = 5_000
+TOTAL_LOTES = int(os.getenv("TOTAL_LOTES", "100"))
 PASTA_CSVS = Path("/gerador/gerador/output/")
 
-while True:
+for numero_lote in range(1, TOTAL_LOTES + 1):
     id_lote = gerar_lote_id_unico()
 
     # Geração dos arquivos originais em output/
@@ -56,5 +58,5 @@ while True:
         move(arquivo, PASTA_CSVS)
 
 
-    print("Dados gerados, arquivos limpos removidos e falhas documentadas com sucesso!")
+    print(f"Lote {numero_lote}/{TOTAL_LOTES} gerado com sucesso!")
     sleep(5)

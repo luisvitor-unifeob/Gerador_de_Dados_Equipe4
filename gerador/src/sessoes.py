@@ -3,6 +3,12 @@ from datetime import datetime, timedelta, time
 import csv
 import math
 import random
+from src.estado import (
+    obter_proximo_id,
+    atualizar_ultimo_id,
+    obter_lote_atual,
+    obter_janela_temporal
+)
 
 #Pasta principal do gerador
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -97,9 +103,9 @@ def sortear_horario(data_base):
     segundo = random.randint(0, 59)
     return datetime.combine(data_base, time(hora, minuto, segundo))
 
-def gerar_datas_inicio(data_criacao, quantidade):
-    hoje = datetime.now().date()
-    total_dias = max(1, (hoje - data_criacao).days)
+def gerar_datas_inicio(data_criacao, quantidade, data_limite=None):
+    fim = data_limite or datetime.now().date()
+    total_dias = max(1, (fim - data_criacao).days)
     datas = []
 
     for _ in range(quantidade):
@@ -161,15 +167,15 @@ def calcular_niveis(indice, quantidade_sessoes, nivel_atual):
     nivel_fim = min(nivel_fim, nivel_atual)
     return nivel_inicio, nivel_fim
 
-def gerar_sessoes_jogador(jogador, proximo_sessao_id):
+def gerar_sessoes_jogador(jogador, proximo_sessao_id, data_limite=None):
     player_id = int(jogador["player_id"])
     idade = int(jogador["idade"])
     nivel_atual = int(jogador["nivel_jogador"])
     data_criacao = datetime.strptime(jogador["data_criacao_conta"], "%Y-%m-%d").date()
     quantidade_sessoes = calcular_quantidade_sessoes(data_criacao, idade)
-    datas_inicio = gerar_datas_inicio(data_criacao, quantidade_sessoes)
+    datas_inicio = gerar_datas_inicio(data_criacao, quantidade_sessoes, data_limite)
     (generos_preferidos, plataformas_preferidas) = escolher_preferencias_jogador()
-    agora = datetime.now().replace(microsecond=0)
+    agora = datetime.combine(data_limite, time(23, 59, 59)) if data_limite else datetime.now().replace(microsecond=0)
     sessoes = []
     ultima_data_fim = None
 
@@ -225,6 +231,11 @@ def gerar_arquivo_sessoes(id_lote, caminho_jogadores):
         "nivel_inicio",
         "nivel_fim"
     ]
+
+    numero_lote = obter_lote_atual()
+    _, data_fim_janela = obter_janela_temporal(numero_lote)
+    proximo_sessao_id = obter_proximo_id("ultimo_sessao_id")
+
     with open(
         caminho_jogadores,
         "r",
@@ -235,12 +246,14 @@ def gerar_arquivo_sessoes(id_lote, caminho_jogadores):
         with open(caminho, "w", newline="", encoding="utf-8-sig") as arquivo_sessoes:
             escritor = csv.DictWriter(arquivo_sessoes, fieldnames=colunas)
             escritor.writeheader()
-            proximo_sessao_id = 1
             for jogador in leitor:
                 (sessoes, proximo_sessao_id) = gerar_sessoes_jogador(
                     jogador,
-                    proximo_sessao_id
+                    proximo_sessao_id,
+                    data_fim_janela
                 )
                 for sessao in sessoes:
                     escritor.writerow(sessao)
+
+    atualizar_ultimo_id("ultimo_sessao_id", proximo_sessao_id - 1)
     return caminho

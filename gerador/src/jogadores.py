@@ -18,6 +18,12 @@ from src.regras import (
     gerar_nivel_realista,
     data_criacao_com_crescimento
 )
+from src.estado import (
+    avancar_lote,
+    obter_proximo_id,
+    atualizar_ultimo_id,
+    obter_janela_temporal
+)
 
 #Pasta principal do gerador
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -128,10 +134,10 @@ def gerar_localizacao():
         "codigo_pais": cod_pais
     }
 
-def gerar_jogador(player_id):
+def gerar_jogador(player_id, data_inicio_janela=None, data_fim_janela=None):
     local = gerar_localizacao()
     fake = FAKERS[local["codigo_pais"]]
-    genero = random.choice(["Masculino", "Feminino"])
+    genero = "Masculino" if random.random() < 0.52 else "Feminino"
 
     if genero == "Masculino":
         nome = fake.first_name_male() + " " + fake.last_name()
@@ -142,14 +148,16 @@ def gerar_jogador(player_id):
     idade = gerar_idade_realista()
     nascimento = gerar_data_nascimento(idade)
 
-    #A conta só pode ser criada depois que o jogador atingir a idade mínima
-    idade_minima = adicionar_anos(nascimento, 13)
-    inicio_sistema = date(2010, 1, 1)
-    data_minima = max(idade_minima, inicio_sistema)
-    data_criacao = data_criacao_com_crescimento(data_minima, HOJE)
+    fim_janela = data_fim_janela or HOJE
+    inicio_janela = data_inicio_janela or date(2010, 1, 1)
 
-    #Nível condizente com a curva de progressão e tempo de existência da conta
-    dias_conta = max(1, (HOJE - data_criacao).days)
+    idade_minima = adicionar_anos(nascimento, 13)
+    data_minima = max(idade_minima, inicio_janela)
+    if data_minima > fim_janela:
+        data_minima = fim_janela
+
+    data_criacao = data_criacao_com_crescimento(data_minima, fim_janela)
+    dias_conta = max(1, (fim_janela - data_criacao).days)
     nivel = gerar_nivel_realista(dias_conta)
 
     return {
@@ -171,7 +179,6 @@ def gerar_arquivo_jogadores(id_lote, quantidade):
     pasta = BASE_DIR / "output/.tmp"
     pasta.mkdir(exist_ok=True)
 
-    #Inclui microssegundos para evitar nomes de arquivos repetidos
     momento = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     caminho = pasta / f"{id_lote}-jogadores_{quantidade}_{momento}.csv"
     colunas = [
@@ -188,11 +195,17 @@ def gerar_arquivo_jogadores(id_lote, quantidade):
         "data_criacao_conta"
     ]
 
+    numero_lote = avancar_lote()
+    data_inicio_janela, data_fim_janela = obter_janela_temporal(numero_lote)
+    primeiro_id = obter_proximo_id("ultimo_player_id")
+
     with open(caminho, "w", newline="", encoding="utf-8-sig") as arquivo:
         escritor = csv.DictWriter(arquivo, fieldnames=colunas)
         escritor.writeheader()
 
-        for player_id in range(1, quantidade + 1):
-            jogador = gerar_jogador(player_id)
+        for player_id in range(primeiro_id, primeiro_id + quantidade):
+            jogador = gerar_jogador(player_id, data_inicio_janela, data_fim_janela)
             escritor.writerow(jogador)
+
+    atualizar_ultimo_id("ultimo_player_id", primeiro_id + quantidade - 1)
     return caminho

@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import csv
 import random
+from src.estado import obter_proximo_id, atualizar_ultimo_id
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -133,13 +134,13 @@ def gerar_arquivo_partidas(id_lote, caminho_sessoes):
     ]
 
     skills_jogadores = {}
+    proximo_partida_id = obter_proximo_id("ultimo_partida_id")
 
     with open(caminho_sessoes, "r", newline="", encoding="utf-8-sig") as arquivo_sessoes:
         leitor = csv.DictReader(arquivo_sessoes)
         with open(caminho, "w", newline="", encoding="utf-8-sig") as arquivo_partidas:
             escritor = csv.DictWriter(arquivo_partidas, fieldnames=colunas)
             escritor.writeheader()
-            proximo_partida_id = 1
 
             for sessao in leitor:
                 player_id = int(sessao["player_id"])
@@ -154,4 +155,6 @@ def gerar_arquivo_partidas(id_lote, caminho_sessoes):
                 )
                 for partida in partidas:
                     escritor.writerow(partida)
+
+    atualizar_ultimo_id("ultimo_partida_id", proximo_partida_id - 1)
     return caminho

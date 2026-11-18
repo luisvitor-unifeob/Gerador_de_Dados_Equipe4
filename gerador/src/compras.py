@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import csv
 import random
+from src.estado import obter_proximo_id, atualizar_ultimo_id
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -115,7 +116,7 @@ def gerar_arquivo_compras(id_lote, caminho_sessoes, caminho_partidas):
 
     #O perfil é definido uma única vez para cada jogador
     perfis_jogadores = {}
-    proximo_compra_id = 1
+    proximo_compra_id = obter_proximo_id("ultimo_compra_id")
 
     with open(caminho_sessoes, "r", newline="", encoding="utf-8-sig") as arquivo_sessoes:
         leitor = csv.DictReader(arquivo_sessoes)
@@ -158,4 +159,6 @@ def gerar_arquivo_compras(id_lote, caminho_sessoes, caminho_partidas):
                         "data_compra": data_compra.strftime("%Y-%m-%d %H:%M:%S")
                     })
                     proximo_compra_id += 1
+
+    atualizar_ultimo_id("ultimo_compra_id", proximo_compra_id - 1)
     return caminho
