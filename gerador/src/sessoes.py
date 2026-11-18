@@ -52,6 +52,11 @@ TEMPO_SESSAO = {
     "Survival": (60, 270)
 }
 
+PESOS_HORARIOS = [
+    3, 2, 1, 1, 1, 1, 2, 3, 5, 6, 7, 8,
+    9, 8, 9, 10, 11, 13, 16, 18, 17, 14, 9, 5
+]
+
 def calcular_quantidade_sessoes(data_criacao, idade):
     hoje = datetime.now().date()
     dias_conta = max(1, (hoje - data_criacao).days)
@@ -86,19 +91,23 @@ def calcular_quantidade_sessoes(data_criacao, idade):
 
     return max(1, quantidade)
 
+def sortear_horario(data_base):
+    hora = random.choices(range(24), weights=PESOS_HORARIOS, k=1)[0]
+    minuto = random.randint(0, 59)
+    segundo = random.randint(0, 59)
+    return datetime.combine(data_base, time(hora, minuto, segundo))
+
 def gerar_datas_inicio(data_criacao, quantidade):
-    inicio = datetime.combine(data_criacao, time.min)
-    agora = datetime.now().replace(microsecond=0)
-    total_segundos = int((agora - inicio).total_seconds())
-    if total_segundos <= 0:
-        return [inicio]
+    hoje = datetime.now().date()
+    total_dias = max(1, (hoje - data_criacao).days)
     datas = []
+
     for _ in range(quantidade):
-        #Beta gera um pequeno viés em direção às datas mais recentes
         proporcao = random.betavariate(1.4, 1.0)
-        segundos = int(total_segundos * proporcao)
-        data_inicio = inicio + timedelta(seconds=segundos)
-        datas.append(data_inicio)
+        deslocamento = int(total_dias * proporcao)
+        dia_sessao = data_criacao + timedelta(days=deslocamento)
+        datas.append(sortear_horario(dia_sessao))
+
     datas.sort()
     return datas
 
@@ -133,11 +142,19 @@ def escolher_plataforma(genero_jogo, plataformas_preferidas):
         return random.choice(compativeis)
     return random.choice(plataformas_disponiveis)
 
+def calcular_duracao_sessao(genero_jogo):
+    tempo_minimo, tempo_maximo = TEMPO_SESSAO[genero_jogo]
+    # Betavariate(1.8, 3.5) concentra durações no terço inferior com cauda longa
+    fator = random.betavariate(1.8, 3.5)
+    duracao = tempo_minimo + int(fator * (tempo_maximo - tempo_minimo))
+    return max(tempo_minimo, min(tempo_maximo, duracao))
+
 def calcular_niveis(indice, quantidade_sessoes, nivel_atual):
     if nivel_atual <= 1:
         return 1, 1
-    progresso_inicio = indice / quantidade_sessoes
-    progresso_fim = (indice + 1) / quantidade_sessoes
+    # Curva exponencial para exigir mais sessões nos níveis finais
+    progresso_inicio = (indice / quantidade_sessoes) ** 1.8
+    progresso_fim = ((indice + 1) / quantidade_sessoes) ** 1.8
     nivel_inicio = 1 + int((nivel_atual - 1) * progresso_inicio)
     nivel_fim = 1 + int((nivel_atual - 1) * progresso_fim)
     nivel_inicio = min(nivel_inicio, nivel_atual)
@@ -166,8 +183,7 @@ def gerar_sessoes_jogador(jogador, proximo_sessao_id):
             break
         genero_jogo = escolher_genero(generos_preferidos)
         plataforma = escolher_plataforma(genero_jogo, plataformas_preferidas)
-        (tempo_minimo, tempo_maximo) = TEMPO_SESSAO[genero_jogo]
-        duracao_minutos = random.randint(tempo_minimo, tempo_maximo)
+        duracao_minutos = calcular_duracao_sessao(genero_jogo)
         minutos_disponiveis = int((agora - data_inicio).total_seconds() // 60)
         if minutos_disponiveis < 1:
             break

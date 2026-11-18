@@ -36,14 +36,22 @@ def calcular_quantidade_partidas(duracao_sessao, genero_jogo):
     quantidade = int(round(random.triangular(1, maximo_possivel, 1)))
     return max(1, min(quantidade, maximo_possivel))
 
-def gerar_resultado():
+def calcular_probabilidades_resultado(skill):
+    # Skill Gaussiana ajusta a taxa de vitória entre ~28% e ~66%
+    taxa_vitoria = max(0.28, min(0.66, 0.47 + (skill * 0.08)))
+    taxa_empate = 0.06
+    taxa_derrota = 1.0 - taxa_vitoria - taxa_empate
+    return [taxa_vitoria, taxa_derrota, taxa_empate]
+
+def gerar_resultado(skill=0.0):
+    pesos = calcular_probabilidades_resultado(skill)
     return random.choices(
         ["Vitória", "Derrota", "Empate"],
-        weights=[47, 47, 6],
+        weights=pesos,
         k=1
     )[0]
 
-def gerar_partidas_sessao(sessao, proximo_partida_id):
+def gerar_partidas_sessao(sessao, proximo_partida_id, skill=0.0):
     sessao_id = int(sessao["sessao_id"])
     genero_jogo = sessao["genero_jogo"]
     data_inicio_sessao = datetime.strptime(sessao["data_inicio_sessao"], "%Y-%m-%d %H:%M:%S")
@@ -70,20 +78,25 @@ def gerar_partidas_sessao(sessao, proximo_partida_id):
             break
 
         duracao_maxima_real = min(duracao_maxima, minutos_restantes)
-        duracao = random.randint(duracao_minima, duracao_maxima_real)
+        duracao = int(random.triangular(
+            duracao_minima,
+            duracao_maxima_real,
+            duracao_minima + (duracao_maxima_real - duracao_minima) * 0.35
+        ))
         data_inicio = cursor
         data_fim = data_inicio + timedelta(minutes=duracao)
-        resultado = gerar_resultado()
-        pontuacao = duracao * random.randint(8, 25)
+        resultado = gerar_resultado(skill)
 
+        multiplicador_skill = max(0.7, 1.0 + (skill * 0.15))
+        pontuacao_base = int(duracao * random.uniform(10, 22) * multiplicador_skill)
         if resultado == "Vitória":
-            pontuacao += random.randint(100, 600)
+            pontuacao_base += random.randint(150, 500)
+        pontuacao = min(pontuacao_base, 5000)
 
-        pontuacao = min(pontuacao, 5000)
-        experiencia_ganha = duracao * random.randint(2, 8)
-
+        xp_base = int(duracao * random.uniform(3, 7) * multiplicador_skill)
         if resultado == "Vitória":
-            experiencia_ganha += random.randint(20, 150)
+            xp_base += random.randint(30, 120)
+        experiencia_ganha = xp_base
 
         partida = {
             "partida_id": proximo_partida_id,
@@ -119,6 +132,8 @@ def gerar_arquivo_partidas(id_lote, caminho_sessoes):
         "experiencia_ganha"
     ]
 
+    skills_jogadores = {}
+
     with open(caminho_sessoes, "r", newline="", encoding="utf-8-sig") as arquivo_sessoes:
         leitor = csv.DictReader(arquivo_sessoes)
         with open(caminho, "w", newline="", encoding="utf-8-sig") as arquivo_partidas:
@@ -127,9 +142,15 @@ def gerar_arquivo_partidas(id_lote, caminho_sessoes):
             proximo_partida_id = 1
 
             for sessao in leitor:
+                player_id = int(sessao["player_id"])
+                if player_id not in skills_jogadores:
+                    skills_jogadores[player_id] = random.gauss(0.0, 1.0)
+                skill = skills_jogadores[player_id]
+
                 (partidas, proximo_partida_id) = gerar_partidas_sessao(
                     sessao,
-                    proximo_partida_id
+                    proximo_partida_id,
+                    skill
                 )
                 for partida in partidas:
                     escritor.writerow(partida)
