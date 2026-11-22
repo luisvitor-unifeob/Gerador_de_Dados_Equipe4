@@ -62,5 +62,5 @@ for numero_lote in range(1, TOTAL_LOTES + 1):
         move(arquivo, PASTA_CSVS)
 
 
-    print(f"Lote {numero_lote}/{TOTAL_LOTES} gerado com sucesso!")
+    print(f"Lote {numero_lote}/{TOTAL_LOTES} gerado com sucesso!", flush=True)
     sleep(5)
