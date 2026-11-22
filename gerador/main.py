@@ -26,7 +26,7 @@ def gerar_lote_id_unico() -> str:
     return f"{timestamp_ms}{uuid_sufixo:04d}"
 
 QUANTIDADE_INICIAL = 10000
-TOTAL_LOTES = 70 
+TOTAL_LOTES = 200 
 PASTA_CSVS = Path("/gerador/gerador/output/")
 
 for numero_lote in range(1, TOTAL_LOTES + 1):
