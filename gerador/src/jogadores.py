@@ -178,6 +178,7 @@ def gerar_jogador(player_id, data_inicio_janela=None, data_fim_janela=None):
 
 #Salva os jogadores em um CSV
 def gerar_arquivo_jogadores(id_lote, quantidade):
+    quantidade = max(1, int(round(quantidade)))
     pasta = BASE_DIR / "output/.tmp"
     pasta.mkdir(exist_ok=True)
 
