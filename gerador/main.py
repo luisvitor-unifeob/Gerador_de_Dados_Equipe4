@@ -25,14 +25,14 @@ def gerar_lote_id_unico() -> str:
     uuid_sufixo = uuid4().int % 10000
     return f"{timestamp_ms}{uuid_sufixo:04d}"
 
-QUANTIDADE_INICIAL = 5000
-TOTAL_LOTES = 100
+QUANTIDADE_INICIAL = 10000
+TOTAL_LOTES = 70 
 PASTA_CSVS = Path("/gerador/gerador/output/")
 
 for numero_lote in range(1, TOTAL_LOTES + 1):
     id_lote = gerar_lote_id_unico()
     lote_no_estado = obter_lote_atual()
-    quantidade = QUANTIDADE_INICIAL if lote_no_estado == 0 else int(round(rnd.triangular(80,360,140)))
+    quantidade = QUANTIDADE_INICIAL if lote_no_estado == 0 else int(round(rnd.triangular(100,1200,440)))
 
     # Geração dos arquivos originais em output/
     arquivo_jogadores    =     gerar_arquivo_jogadores( id_lote, quantidade                        )

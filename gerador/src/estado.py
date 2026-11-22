@@ -62,7 +62,7 @@ def obter_janela_temporal(numero_lote):
     # Lote 1: carga histórica (2022 até fim de 2025)
     if numero_lote <= 1:
         fim_historico = min(hoje, date(2025, 12, 31))
-        return date(2022, 1, 1), fim_historico
+        return date(2020, 1, 1), fim_historico
 
     # Lotes subsequentes: avanço progressivo de 14 dias a cada lote
     inicio_2026 = date(2026, 1, 1)
