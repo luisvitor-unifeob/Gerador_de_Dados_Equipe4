@@ -2,7 +2,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import csv
 import random
-from src.estado import obter_proximo_id, atualizar_ultimo_id
+from src.estado import obter_proximo_id, atualizar_ultimo_id, carregar_pool
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -133,6 +133,7 @@ def gerar_arquivo_partidas(id_lote, caminho_sessoes):
         "experiencia_ganha"
     ]
 
+    pool = carregar_pool()
     skills_jogadores = {}
     proximo_partida_id = obter_proximo_id("ultimo_partida_id")
 
@@ -145,7 +146,11 @@ def gerar_arquivo_partidas(id_lote, caminho_sessoes):
             for sessao in leitor:
                 player_id = int(sessao["player_id"])
                 if player_id not in skills_jogadores:
-                    skills_jogadores[player_id] = random.gauss(0.0, 1.0)
+                    jogador_info = pool.get(str(player_id))
+                    if jogador_info and "skill" in jogador_info:
+                        skills_jogadores[player_id] = float(jogador_info["skill"])
+                    else:
+                        skills_jogadores[player_id] = round(random.gauss(0.0, 1.0), 3)
                 skill = skills_jogadores[player_id]
 
                 (partidas, proximo_partida_id) = gerar_partidas_sessao(

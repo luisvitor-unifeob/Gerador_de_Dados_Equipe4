@@ -1,47 +1,25 @@
 from pathlib import Path
 from datetime import datetime, timedelta, time
 import csv
-import math
 import random
+from src.regras import (
+    GENEROS_JOGO,
+    PLATAFORMAS,
+    escolher_preferencias_jogador,
+    calcular_ganho_nivel
+)
 from src.estado import (
     obter_proximo_id,
     atualizar_ultimo_id,
     obter_lote_atual,
-    obter_janela_temporal
+    obter_janela_temporal,
+    carregar_pool,
+    salvar_pool,
+    selecionar_jogadores_recorrentes
 )
 
 #Pasta principal do gerador
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-#Gêneros disponíveis
-GENEROS_JOGO = [
-    "FPS",
-    "RPG",
-    "Ação",
-    "Aventura",
-    "Estratégia",
-    "Corrida",
-    "Esportes",
-    "MOBA",
-    "Simulação",
-    "Luta",
-    "Survival"
-]
-
-#Plataformas compatíveis com cada gênero
-PLATAFORMAS = {
-    "FPS": ["PC", "PlayStation", "Xbox"],
-    "RPG": ["PC", "PlayStation", "Xbox"],
-    "Ação": ["PC", "PlayStation", "Xbox"],
-    "Aventura": ["PC", "PlayStation", "Xbox"],
-    "Estratégia": ["PC"],
-    "Corrida": ["PC", "PlayStation", "Xbox"],
-    "Esportes": ["PC", "PlayStation", "Xbox"],
-    "MOBA": ["PC", "Mobile"],
-    "Simulação": ["PC", "PlayStation", "Xbox"],
-    "Luta": ["PC", "PlayStation", "Xbox"],
-    "Survival": ["PC", "PlayStation", "Xbox"]
-}
 
 #Duração possível das sessões em minutos
 TEMPO_SESSAO = {
@@ -63,15 +41,12 @@ PESOS_HORARIOS = [
     9, 8, 9, 10, 11, 13, 16, 18, 17, 14, 9, 5
 ]
 
-def calcular_quantidade_sessoes(data_criacao, idade):
+def calcular_quantidade_sessoes(data_criacao, idade, perfil_atividade=None):
     hoje = datetime.now().date()
     dias_conta = max(1, (hoje - data_criacao).days)
+    base = dias_conta ** 0.5
 
-    #Crescimento gradual e evita que contas antigas tenham automaticamente centenas de sessões.
-    base = math.sqrt(dias_conta)
-
-    #Perfil de atividade do jogador
-    perfil = random.choices(
+    perfil = perfil_atividade or random.choices(
         ["casual", "regular", "ativo", "intenso"],
         weights=[35, 40, 20, 5],
         k=1
@@ -82,10 +57,9 @@ def calcular_quantidade_sessoes(data_criacao, idade):
         "ativo": (1.00, 1.50),
         "intenso": (1.50, 2.20)
     }
-    minimo, maximo = fatores[perfil]
+    minimo, maximo = fatores.get(perfil, (0.65, 1.00))
     fator = random.uniform(minimo, maximo)
 
-    #Pequeno viés por faixa etária
     if idade <= 24:
         fator *= 1.15
     elif idade >= 45:
@@ -94,8 +68,33 @@ def calcular_quantidade_sessoes(data_criacao, idade):
         fator *= 0.90
 
     quantidade = int(round(base * fator * random.uniform(0.85, 1.15)))
-
     return max(1, quantidade)
+
+def sortear_quantidade_sessoes_quinzena(perfil, idade):
+    faixas = {
+        "casual": (1, 2),
+        "regular": (2, 5),
+        "ativo": (5, 9),
+        "intenso": (9, 17)
+    }
+    minimo, maximo = faixas.get(perfil, (2, 5))
+    quantidade = random.randint(minimo, maximo)
+    if idade <= 24 and random.random() < 0.30:
+        quantidade += 1
+    elif idade >= 45 and quantidade > 1 and random.random() < 0.35:
+        quantidade -= 1
+    return max(1, quantidade)
+
+def sortear_sessoes_novos_jogadores(perfil, dias_restantes):
+    taxas = {
+        "casual": 0.15,
+        "regular": 0.30,
+        "ativo": 0.55,
+        "intenso": 0.90
+    }
+    taxa = taxas.get(perfil, 0.30)
+    qtd = max(1, int(round(dias_restantes * taxa * random.uniform(0.8, 1.2))))
+    return min(qtd, dias_restantes * 2)
 
 def sortear_horario(data_base):
     hora = random.choices(range(24), weights=PESOS_HORARIOS, k=1)[0]
@@ -117,15 +116,15 @@ def gerar_datas_inicio(data_criacao, quantidade, data_limite=None):
     datas.sort()
     return datas
 
-def escolher_preferencias_jogador():
-    quantidade_generos = random.choice([1, 2, 2, 3])
-    generos_preferidos = random.sample(GENEROS_JOGO, quantidade_generos)
-    quantidade_plataformas = random.choice([1, 1, 1, 2])
-    plataformas_preferidas = random.sample(
-        ["PC", "PlayStation", "Xbox"],
-        quantidade_plataformas
-    )
-    return generos_preferidos, plataformas_preferidas
+def gerar_datas_sessao_janela(data_inicio_janela, data_fim_janela, quantidade):
+    total_dias = max(1, (data_fim_janela - data_inicio_janela).days)
+    datas = []
+    for _ in range(quantidade):
+        deslocamento = random.randint(0, total_dias - 1)
+        dia = data_inicio_janela + timedelta(days=deslocamento)
+        datas.append(sortear_horario(dia))
+    datas.sort()
+    return datas
 
 def escolher_genero(generos_preferidos):
     if random.random() < 0.95:
@@ -137,7 +136,6 @@ def escolher_genero(generos_preferidos):
 
 def escolher_plataforma(genero_jogo, plataformas_preferidas):
     plataformas_disponiveis = PLATAFORMAS[genero_jogo]
-    #Moba pode ocasionalmente ser jogado em dispositivo móvel
     if genero_jogo == "MOBA" and random.random() < 0.20:
         return "Mobile"
     compativeis = [
@@ -150,7 +148,6 @@ def escolher_plataforma(genero_jogo, plataformas_preferidas):
 
 def calcular_duracao_sessao(genero_jogo):
     tempo_minimo, tempo_maximo = TEMPO_SESSAO[genero_jogo]
-    # Betavariate(1.8, 3.5) concentra durações no terço inferior com cauda longa
     fator = random.betavariate(1.8, 3.5)
     duracao = tempo_minimo + int(fator * (tempo_maximo - tempo_minimo))
     return max(tempo_minimo, min(tempo_maximo, duracao))
@@ -158,7 +155,6 @@ def calcular_duracao_sessao(genero_jogo):
 def calcular_niveis(indice, quantidade_sessoes, nivel_atual):
     if nivel_atual <= 1:
         return 1, 1
-    # Curva exponencial para exigir mais sessões nos níveis finais
     progresso_inicio = (indice / quantidade_sessoes) ** 1.8
     progresso_fim = ((indice + 1) / quantidade_sessoes) ** 1.8
     nivel_inicio = 1 + int((nivel_atual - 1) * progresso_inicio)
@@ -167,52 +163,179 @@ def calcular_niveis(indice, quantidade_sessoes, nivel_atual):
     nivel_fim = min(nivel_fim, nivel_atual)
     return nivel_inicio, nivel_fim
 
-def gerar_sessoes_jogador(jogador, proximo_sessao_id, data_limite=None):
+def gerar_sessoes_jogador_historico(jogador, persona, data_fim_janela):
     player_id = int(jogador["player_id"])
     idade = int(jogador["idade"])
-    nivel_atual = int(jogador["nivel_jogador"])
+    nivel_alvo = int(jogador["nivel_jogador"])
     data_criacao = datetime.strptime(jogador["data_criacao_conta"], "%Y-%m-%d").date()
-    quantidade_sessoes = calcular_quantidade_sessoes(data_criacao, idade)
-    datas_inicio = gerar_datas_inicio(data_criacao, quantidade_sessoes, data_limite)
-    (generos_preferidos, plataformas_preferidas) = escolher_preferencias_jogador()
-    agora = datetime.combine(data_limite, time(23, 59, 59)) if data_limite else datetime.now().replace(microsecond=0)
+
+    perfil = persona.get("perfil_atividade", "regular") if persona else "regular"
+    generos = persona.get("generos_preferidos") if persona else None
+    plataformas = persona.get("plataformas_preferidas") if persona else None
+
+    if not generos or not plataformas:
+        generos, plataformas = escolher_preferencias_jogador()
+
+    quantidade_sessoes = calcular_quantidade_sessoes(data_criacao, idade, perfil)
+    datas_inicio = gerar_datas_inicio(data_criacao, quantidade_sessoes, data_fim_janela)
+    agora = datetime.combine(data_fim_janela, time(23, 59, 59))
     sessoes = []
     ultima_data_fim = None
 
     for data_inicio in datas_inicio:
-        #Impede duas sessões do mesmo jogador de acontecerem juntas
         if ultima_data_fim is not None and data_inicio <= ultima_data_fim:
             intervalo = random.randint(30, 180)
             data_inicio = ultima_data_fim + timedelta(minutes=intervalo)
-        #Se o ajuste empurrou a sessão para o futuro, ela não é criada
         if data_inicio >= agora:
             break
-        genero_jogo = escolher_genero(generos_preferidos)
-        plataforma = escolher_plataforma(genero_jogo, plataformas_preferidas)
-        duracao_minutos = calcular_duracao_sessao(genero_jogo)
+        genero = escolher_genero(generos)
+        plataforma = escolher_plataforma(genero, plataformas)
+        duracao = calcular_duracao_sessao(genero)
         minutos_disponiveis = int((agora - data_inicio).total_seconds() // 60)
         if minutos_disponiveis < 1:
             break
-        duracao_minutos = min(duracao_minutos, minutos_disponiveis)
-        data_fim = data_inicio + timedelta(minutes=duracao_minutos)
-        sessao = {
-            "sessao_id": proximo_sessao_id,
+        duracao = min(duracao, minutos_disponiveis)
+        data_fim = data_inicio + timedelta(minutes=duracao)
+
+        sessoes.append({
             "player_id": player_id,
             "data_inicio_sessao": data_inicio.strftime("%Y-%m-%d %H:%M:%S"),
             "data_fim_sessao": data_fim.strftime("%Y-%m-%d %H:%M:%S"),
-            "duracao_minutos": duracao_minutos,
+            "duracao_minutos": duracao,
             "plataforma": plataforma,
-            "genero_jogo": genero_jogo
-        }
-        sessoes.append(sessao)
+            "genero_jogo": genero
+        })
         ultima_data_fim = data_fim
+
+    qtd_real = len(sessoes)
+    for idx, s in enumerate(sessoes):
+        n_ini, n_fim = calcular_niveis(idx, qtd_real, nivel_alvo)
+        s["nivel_inicio"] = n_ini
+        s["nivel_fim"] = n_fim
+
+    if persona:
+        persona["nivel_atual"] = nivel_alvo
+        persona["ultimo_lote_ativo"] = 1
+
+    return sessoes
+
+def gerar_sessoes_jogador_recorrente(jogador, data_inicio_janela, data_fim_janela, numero_lote):
+    player_id = int(jogador["player_id"])
+    idade = int(jogador.get("idade", 25))
+    nivel_inicio = int(jogador.get("nivel_atual", 1))
+    perfil = jogador.get("perfil_atividade", "regular")
+    generos = jogador.get("generos_preferidos", ["Ação"])
+    plataformas = jogador.get("plataformas_preferidas", ["PC"])
+
+    quantidade_sessoes = sortear_quantidade_sessoes_quinzena(perfil, idade)
+    datas_inicio = gerar_datas_sessao_janela(data_inicio_janela, data_fim_janela, quantidade_sessoes)
+    agora = datetime.combine(data_fim_janela, time(23, 59, 59))
+
+    sessoes_brutas = []
+    ultima_data_fim = None
+
+    for data_inicio in datas_inicio:
+        if ultima_data_fim is not None and data_inicio <= ultima_data_fim:
+            intervalo = random.randint(30, 180)
+            data_inicio = ultima_data_fim + timedelta(minutes=intervalo)
+        if data_inicio >= agora:
+            break
+        genero = escolher_genero(generos)
+        plataforma = escolher_plataforma(genero, plataformas)
+        duracao = calcular_duracao_sessao(genero)
+        minutos_disponiveis = int((agora - data_inicio).total_seconds() // 60)
+        if minutos_disponiveis < 1:
+            break
+        duracao = min(duracao, minutos_disponiveis)
+        data_fim = data_inicio + timedelta(minutes=duracao)
+
+        sessoes_brutas.append({
+            "player_id": player_id,
+            "data_inicio_sessao": data_inicio.strftime("%Y-%m-%d %H:%M:%S"),
+            "data_fim_sessao": data_fim.strftime("%Y-%m-%d %H:%M:%S"),
+            "duracao_minutos": duracao,
+            "plataforma": plataforma,
+            "genero_jogo": genero
+        })
+        ultima_data_fim = data_fim
+
+    qtd_real = len(sessoes_brutas)
+    ganho = calcular_ganho_nivel(nivel_inicio, qtd_real, perfil)
+    nivel_fim_total = min(100, nivel_inicio + ganho)
+
+    for idx, s in enumerate(sessoes_brutas):
+        if qtd_real <= 1 or nivel_inicio == nivel_fim_total:
+            s["nivel_inicio"] = nivel_inicio
+            s["nivel_fim"] = nivel_fim_total
+        else:
+            n_ini = nivel_inicio + int((nivel_fim_total - nivel_inicio) * (idx / qtd_real))
+            n_fim = nivel_inicio + int((nivel_fim_total - nivel_inicio) * ((idx + 1) / qtd_real))
+            s["nivel_inicio"] = min(100, n_ini)
+            s["nivel_fim"] = min(100, n_fim)
+
+    jogador["nivel_atual"] = nivel_fim_total
+    jogador["ultimo_lote_ativo"] = numero_lote
+    return sessoes_brutas
+
+def gerar_sessoes_jogador_novo(jogador_csv, persona, data_fim_janela, numero_lote):
+    player_id = int(jogador_csv["player_id"])
+    data_criacao = datetime.strptime(jogador_csv["data_criacao_conta"], "%Y-%m-%d").date()
+    nivel_alvo = int(jogador_csv["nivel_jogador"])
+
+    perfil = persona.get("perfil_atividade", "regular") if persona else "regular"
+    generos = persona.get("generos_preferidos", ["Ação"]) if persona else ["Ação"]
+    plataformas = persona.get("plataformas_preferidas", ["PC"]) if persona else ["PC"]
+
+    dias_restantes = max(1, (data_fim_janela - data_criacao).days)
+    quantidade_sessoes = sortear_sessoes_novos_jogadores(perfil, dias_restantes)
+    datas_inicio = gerar_datas_sessao_janela(data_criacao, data_fim_janela, quantidade_sessoes)
+    agora = datetime.combine(data_fim_janela, time(23, 59, 59))
+
+    sessoes_brutas = []
+    ultima_data_fim = None
+
+    for data_inicio in datas_inicio:
+        if ultima_data_fim is not None and data_inicio <= ultima_data_fim:
+            intervalo = random.randint(30, 180)
+            data_inicio = ultima_data_fim + timedelta(minutes=intervalo)
+        if data_inicio >= agora:
+            break
+        genero = escolher_genero(generos)
+        plataforma = escolher_plataforma(genero, plataformas)
+        duracao = calcular_duracao_sessao(genero)
+        minutos_disponiveis = int((agora - data_inicio).total_seconds() // 60)
+        if minutos_disponiveis < 1:
+            break
+        duracao = min(duracao, minutos_disponiveis)
+        data_fim = data_inicio + timedelta(minutes=duracao)
+
+        sessoes_brutas.append({
+            "player_id": player_id,
+            "data_inicio_sessao": data_inicio.strftime("%Y-%m-%d %H:%M:%S"),
+            "data_fim_sessao": data_fim.strftime("%Y-%m-%d %H:%M:%S"),
+            "duracao_minutos": duracao,
+            "plataforma": plataforma,
+            "genero_jogo": genero
+        })
+        ultima_data_fim = data_fim
+
+    qtd_real = len(sessoes_brutas)
+    for idx, s in enumerate(sessoes_brutas):
+        n_ini, n_fim = calcular_niveis(idx, qtd_real, nivel_alvo)
+        s["nivel_inicio"] = n_ini
+        s["nivel_fim"] = n_fim
+
+    if persona:
+        persona["nivel_atual"] = nivel_alvo
+        persona["ultimo_lote_ativo"] = numero_lote
+
+    return sessoes_brutas
+
+def gerar_sessoes_jogador(jogador, proximo_sessao_id, data_limite=None):
+    sessoes = gerar_sessoes_jogador_historico(jogador, None, data_limite or datetime.now().date())
+    for s in sessoes:
+        s["sessao_id"] = proximo_sessao_id
         proximo_sessao_id += 1
-    #Calcula os níveis somente depois de saber quantas sessões realmente foram criadas.
-    quantidade_real = len(sessoes)
-    for indice, sessao in enumerate(sessoes):
-        (nivel_inicio, nivel_fim) = calcular_niveis(indice, quantidade_real, nivel_atual)
-        sessao["nivel_inicio"] = nivel_inicio
-        sessao["nivel_fim"] = nivel_fim
     return sessoes, proximo_sessao_id
 
 def gerar_arquivo_sessoes(id_lote, caminho_jogadores):
@@ -233,27 +356,45 @@ def gerar_arquivo_sessoes(id_lote, caminho_jogadores):
     ]
 
     numero_lote = obter_lote_atual()
-    _, data_fim_janela = obter_janela_temporal(numero_lote)
+    data_inicio_janela, data_fim_janela = obter_janela_temporal(numero_lote)
+    pool = carregar_pool()
+
+    novos_jogadores = []
+    ids_novos = set()
+    with open(caminho_jogadores, "r", newline="", encoding="utf-8-sig") as arquivo_jogadores:
+        leitor = csv.DictReader(arquivo_jogadores)
+        for linha in leitor:
+            novos_jogadores.append(linha)
+            ids_novos.add(int(linha["player_id"]))
+
+    todas_sessoes = []
+    if numero_lote <= 1:
+        for jogador in novos_jogadores:
+            pid = int(jogador["player_id"])
+            persona = pool.get(str(pid))
+            sessoes = gerar_sessoes_jogador_historico(jogador, persona, data_fim_janela)
+            todas_sessoes.extend(sessoes)
+    else:
+        recorrentes = selecionar_jogadores_recorrentes(pool, ids_novos, numero_lote)
+        for j in recorrentes:
+            sessoes = gerar_sessoes_jogador_recorrente(j, data_inicio_janela, data_fim_janela, numero_lote)
+            todas_sessoes.extend(sessoes)
+        for j_csv in novos_jogadores:
+            pid = int(j_csv["player_id"])
+            persona = pool.get(str(pid))
+            sessoes = gerar_sessoes_jogador_novo(j_csv, persona, data_fim_janela, numero_lote)
+            todas_sessoes.extend(sessoes)
+
+    todas_sessoes.sort(key=lambda s: s["data_inicio_sessao"])
     proximo_sessao_id = obter_proximo_id("ultimo_sessao_id")
 
-    with open(
-        caminho_jogadores,
-        "r",
-        newline="",
-        encoding="utf-8-sig"
-    ) as arquivo_jogadores:
-        leitor = csv.DictReader(arquivo_jogadores)
-        with open(caminho, "w", newline="", encoding="utf-8-sig") as arquivo_sessoes:
-            escritor = csv.DictWriter(arquivo_sessoes, fieldnames=colunas)
-            escritor.writeheader()
-            for jogador in leitor:
-                (sessoes, proximo_sessao_id) = gerar_sessoes_jogador(
-                    jogador,
-                    proximo_sessao_id,
-                    data_fim_janela
-                )
-                for sessao in sessoes:
-                    escritor.writerow(sessao)
+    with open(caminho, "w", newline="", encoding="utf-8-sig") as arquivo_sessoes:
+        escritor = csv.DictWriter(arquivo_sessoes, fieldnames=colunas)
+        escritor.writeheader()
+        for idx, sessao in enumerate(todas_sessoes):
+            sessao["sessao_id"] = proximo_sessao_id + idx
+            escritor.writerow(sessao)
 
-    atualizar_ultimo_id("ultimo_sessao_id", proximo_sessao_id - 1)
+    salvar_pool(pool)
+    atualizar_ultimo_id("ultimo_sessao_id", proximo_sessao_id + len(todas_sessoes) - 1)
     return caminho

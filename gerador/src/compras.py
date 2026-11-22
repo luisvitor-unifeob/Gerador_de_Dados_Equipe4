@@ -2,7 +2,13 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import csv
 import random
-from src.estado import obter_proximo_id, atualizar_ultimo_id
+from src.estado import (
+    obter_proximo_id,
+    atualizar_ultimo_id,
+    carregar_pool,
+    salvar_pool
+)
+from src.regras import escolher_perfil_compra
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -13,18 +19,6 @@ PERFIS_COMPRA = {
     "dolphin": 0.12,
     "whale": 0.38
 }
-
-def escolher_perfil_compra(nivel=1):
-    # Jogadores de nível mais alto têm maior taxa de conversão
-    fator_nivel = min(3.0, 1.0 + (nivel / 40.0))
-    peso_pagante = 6.0 * fator_nivel
-    peso_nao_pagante = max(70.0, 100.0 - peso_pagante)
-
-    return random.choices(
-        ["nao_pagante", "minnow", "dolphin", "whale"],
-        weights=[peso_nao_pagante, peso_pagante * 0.70, peso_pagante * 0.23, peso_pagante * 0.07],
-        k=1
-    )[0]
 
 def carregar_partidas(caminho_partidas):
     partidas = {}
@@ -113,8 +107,8 @@ def gerar_arquivo_compras(id_lote, caminho_sessoes, caminho_partidas):
     ]
 
     partidas_por_sessao = carregar_partidas(caminho_partidas)
-
-    #O perfil é definido uma única vez para cada jogador
+    pool = carregar_pool()
+    pool_alterado = False
     perfis_jogadores = {}
     proximo_compra_id = obter_proximo_id("ultimo_compra_id")
 
@@ -130,7 +124,16 @@ def gerar_arquivo_compras(id_lote, caminho_sessoes, caminho_partidas):
                 nivel = int(sessao.get("nivel_fim", 1))
 
                 if player_id not in perfis_jogadores:
-                    perfis_jogadores[player_id] = escolher_perfil_compra(nivel)
+                    jogador_info = pool.get(str(player_id))
+                    if jogador_info and "perfil_compra" in jogador_info:
+                        perfil = jogador_info["perfil_compra"]
+                        if perfil == "nao_pagante" and nivel >= 15 and random.random() < 0.005:
+                            perfil = "minnow"
+                            jogador_info["perfil_compra"] = perfil
+                            pool_alterado = True
+                        perfis_jogadores[player_id] = perfil
+                    else:
+                        perfis_jogadores[player_id] = escolher_perfil_compra(nivel)
 
                 perfil = perfis_jogadores[player_id]
                 quantidade = calcular_quantidade_compras(perfil)
@@ -160,5 +163,7 @@ def gerar_arquivo_compras(id_lote, caminho_sessoes, caminho_partidas):
                     })
                     proximo_compra_id += 1
 
+    if pool_alterado:
+        salvar_pool(pool)
     atualizar_ultimo_id("ultimo_compra_id", proximo_compra_id - 1)
     return caminho

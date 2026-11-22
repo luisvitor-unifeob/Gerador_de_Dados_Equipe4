@@ -16,13 +16,15 @@ from src.regras import (
     criar_username,
     gerar_idade_realista,
     gerar_nivel_realista,
-    data_criacao_com_crescimento
+    data_criacao_com_crescimento,
+    criar_persona_jogador
 )
 from src.estado import (
     avancar_lote,
     obter_proximo_id,
     atualizar_ultimo_id,
-    obter_janela_temporal
+    obter_janela_temporal,
+    adicionar_jogadores_pool
 )
 
 #Pasta principal do gerador
@@ -199,6 +201,7 @@ def gerar_arquivo_jogadores(id_lote, quantidade):
     data_inicio_janela, data_fim_janela = obter_janela_temporal(numero_lote)
     primeiro_id = obter_proximo_id("ultimo_player_id")
 
+    novas_personas = []
     with open(caminho, "w", newline="", encoding="utf-8-sig") as arquivo:
         escritor = csv.DictWriter(arquivo, fieldnames=colunas)
         escritor.writeheader()
@@ -206,6 +209,15 @@ def gerar_arquivo_jogadores(id_lote, quantidade):
         for player_id in range(primeiro_id, primeiro_id + quantidade):
             jogador = gerar_jogador(player_id, data_inicio_janela, data_fim_janela)
             escritor.writerow(jogador)
+            persona = criar_persona_jogador(
+                player_id=player_id,
+                idade=jogador["idade"],
+                nivel=jogador["nivel_jogador"],
+                data_criacao=jogador["data_criacao_conta"],
+                lote_criacao=numero_lote
+            )
+            novas_personas.append(persona)
 
+    adicionar_jogadores_pool(novas_personas)
     atualizar_ultimo_id("ultimo_player_id", primeiro_id + quantidade - 1)
     return caminho

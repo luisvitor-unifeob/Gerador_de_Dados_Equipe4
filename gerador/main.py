@@ -4,6 +4,7 @@ from src.partidas import gerar_arquivo_partidas
 from src.compras import gerar_arquivo_compras
 from src.itens import gerar_arquivo_itens
 from src.itens_compra import gerar_arquivo_itens_compra
+from src.estado import obter_lote_atual
 
 from sujeira.jogadores_sujeira import sujar_jogadores
 from sujeira.sessoes_sujeira import sujar_sessoes
@@ -17,21 +18,25 @@ from uuid import uuid4
 from shutil import move
 from pathlib import Path
 import os
+import random as rnd
 
 def gerar_lote_id_unico() -> str:
     timestamp_ms = int(time() * 1000)
     uuid_sufixo = uuid4().int % 10000
     return f"{timestamp_ms}{uuid_sufixo:04d}"
 
-QUANTIDADE = 5_000
-TOTAL_LOTES = int(os.getenv("TOTAL_LOTES", "100"))
+QUANTIDADE_INICIAL = 5000
+QUANTIDADE_INCREMENTAL = rnd.betavariate(0.2, 0.5) * 400
+TOTAL_LOTES = 100
 PASTA_CSVS = Path("/gerador/gerador/output/")
 
 for numero_lote in range(1, TOTAL_LOTES + 1):
     id_lote = gerar_lote_id_unico()
+    lote_no_estado = obter_lote_atual()
+    quantidade = QUANTIDADE_INICIAL if lote_no_estado == 0 else QUANTIDADE_INCREMENTAL
 
     # Geração dos arquivos originais em output/
-    arquivo_jogadores    =     gerar_arquivo_jogadores( id_lote, QUANTIDADE                        )
+    arquivo_jogadores    =     gerar_arquivo_jogadores( id_lote, quantidade                        )
     arquivo_sessoes      =       gerar_arquivo_sessoes( id_lote, arquivo_jogadores                 )
     arquivo_partidas     =      gerar_arquivo_partidas( id_lote, arquivo_sessoes                   )
 
